@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: forensic-dd-backend
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    disk:
+      name: forensic-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: ENVIRONMENT
+        value: production
+      - key: CORS_ORIGINS
+        value: http://localhost:3000,https://frontend-kappa-gray-30.vercel.app,https://*.vercel.app
+      - key: MAX_QUERY_COST_USD
+        value: 0.10
+      - key: SEC_USER_AGENT
+        value: ForensicResearch audit@forensicresearch.org
+      - key: NEO4J_URI
+        sync: false
+      - key: NEO4J_USER
+        sync: false
+      - key: NEO4J_PASSWORD
+        sync: false

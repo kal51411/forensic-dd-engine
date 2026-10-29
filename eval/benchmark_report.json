@@ -1,0 +1,132 @@
+{
+  "vector_only": {
+    "hop-0": {
+      "numerator": 9,
+      "denominator": 10,
+      "accuracy": 0.9
+    },
+    "hop-1": {
+      "numerator": 9,
+      "denominator": 10,
+      "accuracy": 0.9
+    },
+    "hop-2": {
+      "numerator": 10,
+      "denominator": 10,
+      "accuracy": 1.0
+    },
+    "out-of-scope": {
+      "numerator": 10,
+      "denominator": 10,
+      "accuracy": 1.0
+    },
+    "adversarial": {
+      "numerator": 1,
+      "denominator": 5,
+      "accuracy": 0.2
+    },
+    "graceful_degradation_rate": {
+      "numerator": 0,
+      "denominator": 2,
+      "accuracy": 0.0
+    },
+    "citation_precision": {
+      "numerator": 35,
+      "denominator": 35,
+      "accuracy": 1.0
+    },
+    "overall_benchmark": {
+      "numerator": 39,
+      "denominator": 45,
+      "accuracy": 0.8667
+    },
+    "performance": {
+      "avg_cost_per_query_usd": 0.00328,
+      "avg_cost_per_audit_usd": 0.0131,
+      "p50_retrieval_ms": 0.12,
+      "p95_retrieval_ms": 0.31,
+      "p50_generation_ms": 0.09,
+      "p95_generation_ms": 0.5,
+      "p50_total_latency_ms": 0.2,
+      "p95_total_latency_ms": 0.79,
+      "tokens_by_agent": {
+        "bull": 0,
+        "bear": 0,
+        "fact_checker": 0,
+        "judge": 14142
+      },
+      "avg_tokens_per_audit": {
+        "bear": 0,
+        "bull": 0,
+        "fact_checker": 0,
+        "judge": 314,
+        "total_per_audit": 314
+      }
+    }
+  },
+  "hybrid": {
+    "hop-0": {
+      "numerator": 10,
+      "denominator": 10,
+      "accuracy": 1.0
+    },
+    "hop-1": {
+      "numerator": 9,
+      "denominator": 10,
+      "accuracy": 0.9
+    },
+    "hop-2": {
+      "numerator": 10,
+      "denominator": 10,
+      "accuracy": 1.0
+    },
+    "out-of-scope": {
+      "numerator": 10,
+      "denominator": 10,
+      "accuracy": 1.0
+    },
+    "adversarial": {
+      "numerator": 4,
+      "denominator": 5,
+      "accuracy": 0.8
+    },
+    "graceful_degradation_rate": {
+      "numerator": 2,
+      "denominator": 2,
+      "accuracy": 1.0
+    },
+    "citation_precision": {
+      "numerator": 33,
+      "denominator": 33,
+      "accuracy": 1.0
+    },
+    "overall_benchmark": {
+      "numerator": 43,
+      "denominator": 45,
+      "accuracy": 0.9556
+    },
+    "performance": {
+      "avg_cost_per_query_usd": 0.00681,
+      "avg_cost_per_audit_usd": 0.0272,
+      "p50_retrieval_ms": 0.12,
+      "p95_retrieval_ms": 0.83,
+      "p50_generation_ms": 0.06,
+      "p95_generation_ms": 0.5,
+      "p50_total_latency_ms": 0.17,
+      "p95_total_latency_ms": 1.16,
+      "tokens_by_agent": {
+        "bull": 11141,
+        "bear": 10616,
+        "fact_checker": 7700,
+        "judge": 16739
+      },
+      "avg_tokens_per_audit": {
+        "bear": 236,
+        "bull": 248,
+        "fact_checker": 171,
+        "judge": 372,
+        "total_per_audit": 1027
+      }
+    }
+  }
+}
