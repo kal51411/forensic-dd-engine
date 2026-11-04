@@ -51,3 +51,4 @@ frontend/out/
 .vscode/
 *.swp
 *.swo
+*.tsbuildinfo
