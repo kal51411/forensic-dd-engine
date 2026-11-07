@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+import sys
+import os
+import argparse
+import uvicorn
+
+def main():
+    parser = argparse.ArgumentParser(description="Forensic Due Diligence Engine CLI")
+    parser.add_argument("action", nargs="?", default="serve", choices=["serve", "audit", "test"], help="Action to perform (default: serve)")
+    parser.add_argument("--ticker", type=str, help="Ticker symbol for audit (US e.g. MSFT, or NSE e.g. ITC, IDBI, RELIANCE)", default="MSFT")
+    parser.add_argument("--port", type=int, default=8000, help="Port to run server on")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to run server on")
+    
+    args = parser.parse_args()
+    
+    pkg_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, pkg_dir)
+    os.chdir(pkg_dir)
+    
+    if args.action == "serve":
+        print(f"Starting Forensic Due Diligence Engine server on http://{args.host}:{args.port}...")
+        print(f"API Docs available at http://localhost:{args.port}/docs")
+        uvicorn.run("api.server:app", host=args.host, port=args.port, reload=False)
+    elif args.action == "audit":
+        ticker_upper = args.ticker.upper()
+        # Known US mega-caps or explicit US tickers go through SEC EDGAR, others or .NS/.BO or Indian bluechips go through NSEClient
+        us_tickers = {"MSFT", "NVDA", "AAPL", "GOOGL", "AMZN", "META", "TSLA"}
+        is_nse = ticker_upper.endswith(".NS") or ticker_upper.endswith(".BO") or ticker_upper not in us_tickers
+        
+        if is_nse:
+            from ingest.nse_client import NSEClient
+            print(f"Fetching and auditing NSE stock '{ticker_upper}' via Yahoo Finance / NSE...")
+            try:
+                quant_bundle, chunks, metadata, was_cached = NSEClient.ingest_and_audit_nse_ticker(ticker_upper)
+            except Exception as e:
+                print(f"[-] NSE fetch failed ({e}), attempting SEC EDGAR fallback...")
+                from ingest.live_ingest import LiveEdgarIngester
+                ingester = LiveEdgarIngester()
+                quant_bundle, chunks, metadata, was_cached = ingester.ingest_and_audit_ticker(ticker_upper)
+        else:
+            from ingest.live_ingest import LiveEdgarIngester
+            print(f"Fetching and auditing US stock '{ticker_upper}' via SEC EDGAR...")
+            ingester = LiveEdgarIngester()
+            quant_bundle, chunks, metadata, was_cached = ingester.ingest_and_audit_ticker(ticker_upper)
+
+        print("\n=== FORENSIC DUE DILIGENCE AUDIT REPORT ===")
+        print(f"Ticker: {metadata.get('ticker')} | Entity: {metadata.get('entity_name')}")
+        print(f"Exchange: {metadata.get('exchange', 'SEC EDGAR (US)')} | Currency: {metadata.get('currency', 'USD')}")
+        print(f"Fiscal Year: {metadata.get('fiscal_year')} (Cached: {was_cached})")
+        print(f"Beneish M-Score: {quant_bundle.beneish.m_score:.2f} (Suspect: {quant_bundle.beneish.is_manipulator_suspect})")
+        print(f"Sloan Accrual Ratio: {quant_bundle.sloan.accrual_ratio * 100:.2f}% (Red Flag: {quant_bundle.sloan.is_red_flag})")
+        print(f"Altman Z-Score: {quant_bundle.altman.z_score:.2f} [{quant_bundle.altman.zone}]")
+        print(f"Total Red Flags: {quant_bundle.red_flag_count}")
+        print("===========================================\n")
+    elif args.action == "test":
+        import pytest
+        sys.exit(pytest.main(["tests/"]))
+
+if __name__ == "__main__":
+    main()
