@@ -14,51 +14,65 @@ export function getAvailableTickers(): string[] {
   return ['MSFT', 'NVDA', 'AAPL', 'ENRN', 'TSLA', 'GME'];
 }
 
-/** Generic fetch wrapper with error handling */
+/** Generic fetch wrapper with error handling and a 6-second timeout.
+ *  The timeout prevents the browser from hanging when the Render/Railway
+ *  backend is sleeping (cold-start can take 30+ seconds on free tier).
+ */
 async function apiFetch<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
   const url = `${API_BASE}${path}`;
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
 
-  if (!res.ok) {
-    let detail = `HTTP ${res.status}`;
-    try {
-      const json = await res.json();
-      detail = json?.detail ?? detail;
-    } catch {
-      // ignore JSON parse error
+  // Abort the request if it takes longer than 6 seconds
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+  try {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      ...options,
+    });
+
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`;
+      try {
+        const json = await res.json();
+        detail = json?.detail ?? detail;
+      } catch {
+        // ignore JSON parse error
+      }
+      throw new Error(detail);
     }
-    throw new Error(detail);
-  }
 
-  return res.json() as Promise<T>;
+    return res.json() as Promise<T>;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
  * Trigger an SEC EDGAR audit for a given ticker symbol.
- * Checks backend API first, and immediately falls back to MOCK_AUDITS[cleanTicker]
- * if the backend is unreachable or throws.
+ * Checks backend API first (with 6-second timeout), and immediately falls back
+ * to MOCK_AUDITS[cleanTicker] if the backend is unreachable, sleeping, or throws.
  */
 export async function runLiveAudit(
   ticker: string,
   forceRefresh = false
-): Promise<LiveAuditResponse> {
+): Promise<LiveAuditResponse & { _fromMock?: boolean }> {
   const cleanTicker = ticker.toUpperCase().trim();
 
   try {
-    return await apiFetch<LiveAuditResponse>(
+    const result = await apiFetch<LiveAuditResponse>(
       `/audit/live/${encodeURIComponent(cleanTicker)}?force_refresh=${forceRefresh}`,
       { method: 'POST' }
     );
+    return result;
   } catch {
     // Graceful standalone fallback: return real audited benchmark filing
     if (MOCK_AUDITS[cleanTicker]) {
-      return MOCK_AUDITS[cleanTicker];
+      return { ...MOCK_AUDITS[cleanTicker], _fromMock: true };
     }
     // Generic fallback for any other custom ticker
     const fallbackTemplate = MOCK_AUDITS['MSFT'];
@@ -69,6 +83,7 @@ export async function runLiveAudit(
         entity_name: `${cleanTicker} CORP (AUDIT DEMO)`,
         audit_id: `audit_${cleanTicker}_2026_demo`,
         cached: true,
+        _fromMock: true,
       };
     }
     throw new Error(`No audit data found for ticker: ${cleanTicker}`);
